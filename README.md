@@ -1,10 +1,68 @@
 基于cas-client-autoconfig-support调整
 =============================
+原作者仓库地址：
+https://github.com/Unicon/cas-client-autoconfig-support
+
+> 修改了CasClientConfigurationProperties.java、CasClientConfiguration.java 文件，添加了ignorePattern属性，在CasClientConfiguration初始化Filter参数时，设置ignorePattern值，内容为正则表达式。
+
+
+* Available optional properties
+
+> in Spring Boot's `application.properties` or `application.yml` Example:
+
+```bash
+# 示例 /js/*|/img/*|/view/*|/css/*
+cas.ignore-pattern=/api/v1/data-service-api/exchange/*
+```
+
+
+* 说明
+参数ignorePattern值对应 AuthenticationFilter.java的init-param。
+
+doFilter方法
+```java
+if (this.isRequestUrlExcluded(request)) {
+   this.logger.debug("Request is ignored.");
+   filterChain.doFilter(request, response);
+}
+```
+
+isRequestUrlExcluded方法
+```java
+String requestUri = urlBuffer.toString();
+return this.ignoreUrlPatternMatcherStrategyClass.matches(requestUri);
+```
+
+ignoreUrlPatternMatcherStrategyClass对应RegexUrlPatternMatcherStrategy.java
+
+matches正则表达式匹配不拦截url
+```
+public boolean matches(String url) {
+        return this.pattern.matcher(url).find();
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cas-client-autoconfig-support
+=============================
+## Usage
 
 Library providing annotation-based configuration support for CAS Java clients. Primarily designed for super easy CASification of Spring Boot apps.
-
-> This project was developed as part of Unicon's [Open Source Support program](https://unicon.net/opensource).
-Professional Support / Integration Assistance for this module is available. For more information [visit](https://unicon.net/opensource/cas).
 
 * Add the following required properties
 

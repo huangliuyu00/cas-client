@@ -8,6 +8,8 @@ package net.unicon.cas.client.configuration;
 import net.unicon.cas.client.configuration.EnableCasClient.ValidationType;
 import org.jasig.cas.client.authentication.AuthenticationFilter;
 import org.jasig.cas.client.authentication.Saml11AuthenticationFilter;
+import org.jasig.cas.client.session.SingleSignOutFilter;
+import org.jasig.cas.client.session.SingleSignOutHttpSessionListener;
 import org.jasig.cas.client.util.AssertionThreadLocalFilter;
 import org.jasig.cas.client.util.HttpServletRequestWrapperFilter;
 import org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter;
@@ -16,16 +18,14 @@ import org.jasig.cas.client.validation.Saml11TicketValidationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.Filter;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -41,6 +41,27 @@ public class CasClientConfiguration {
     private CasClientConfigurer casClientConfigurer;
 
     public CasClientConfiguration() {
+    }
+
+    @Bean
+    public FilterRegistrationBean singleSignOutFilter(){
+        FilterRegistrationBean registration = new FilterRegistrationBean();
+        registration.setFilter(new SingleSignOutFilter());
+        registration.setName("singleSignOutFilter");
+        registration.setUrlPatterns(Arrays.asList("/*"));
+        //设置过滤器参数
+        Map<String, String> filterInitParams=new HashMap<String, String>();
+        filterInitParams.put("casServerUrlPrefix",this.configProps.getServerUrlPrefix());
+        registration.setInitParameters(filterInitParams);
+        registration.setOrder(1);
+        return registration;
+    }
+
+    @Bean
+    public ServletListenerRegistrationBean singleSignOutHttpSessionListener(){
+        ServletListenerRegistrationBean listenerRegistration=new ServletListenerRegistrationBean();
+        listenerRegistration.setListener(new SingleSignOutHttpSessionListener());
+        return listenerRegistration;
     }
 
     @Bean
@@ -61,7 +82,7 @@ public class CasClientConfiguration {
                 throw new IllegalStateException("Unknown CAS validation type");
         }
 
-        this.initFilter(validationFilter, (Filter)targetCasValidationFilter, 1, this.constructInitParams("casServerUrlPrefix", this.configProps.getServerUrlPrefix(), this.configProps.getClientHostUrl()), this.configProps.getValidationUrlPatterns());
+        this.initFilter(validationFilter, (Filter)targetCasValidationFilter, 2, this.constructInitParams("casServerUrlPrefix", this.configProps.getServerUrlPrefix(), this.configProps.getClientHostUrl()), this.configProps.getValidationUrlPatterns());
         if (this.configProps.getUseSession() != null) {
             validationFilter.getInitParameters().put("useSession", String.valueOf(this.configProps.getUseSession()));
         }
@@ -102,7 +123,7 @@ public class CasClientConfiguration {
     public FilterRegistrationBean casAuthenticationFilter() {
         FilterRegistrationBean authnFilter = new FilterRegistrationBean();
         Filter targetCasAuthnFilter = this.configProps.getValidationType() != ValidationType.CAS && this.configProps.getValidationType() != ValidationType.CAS3 ? new Saml11AuthenticationFilter() : new AuthenticationFilter();
-        this.initFilter(authnFilter, (Filter)targetCasAuthnFilter, 2, this.constructInitParams("casServerLoginUrl", this.configProps.getServerLoginUrl(), this.configProps.getClientHostUrl()), this.configProps.getAuthenticationUrlPatterns());
+        this.initFilter(authnFilter, (Filter)targetCasAuthnFilter, 3, this.constructInitParams("casServerLoginUrl", this.configProps.getServerLoginUrl(), this.configProps.getClientHostUrl()), this.configProps.getAuthenticationUrlPatterns());
         if (this.configProps.getGateway() != null) {
             authnFilter.getInitParameters().put("gateway", String.valueOf(this.configProps.getGateway()));
         }
@@ -122,13 +143,15 @@ public class CasClientConfiguration {
             reqWrapperFilter.setUrlPatterns(this.configProps.getRequestWrapperUrlPatterns());
         }
 
-        reqWrapperFilter.setOrder(3);
+        reqWrapperFilter.setOrder(4);
         if (this.casClientConfigurer != null) {
             this.casClientConfigurer.configureHttpServletRequestWrapperFilter(reqWrapperFilter);
         }
 
         return reqWrapperFilter;
     }
+
+
 
     @Bean
     public FilterRegistrationBean casAssertionThreadLocalFilter() {
@@ -138,7 +161,7 @@ public class CasClientConfiguration {
             assertionTLFilter.setUrlPatterns(this.configProps.getAssertionThreadLocalUrlPatterns());
         }
 
-        assertionTLFilter.setOrder(4);
+        assertionTLFilter.setOrder(5);
         if (this.casClientConfigurer != null) {
             this.casClientConfigurer.configureAssertionThreadLocalFilter(assertionTLFilter);
         }

@@ -3,7 +3,7 @@
 原作者仓库地址：
 https://github.com/Unicon/cas-client-autoconfig-support
 
-> 修改了CasClientConfigurationProperties.java、CasClientConfiguration.java 文件，添加了ignorePattern属性，在CasClientConfiguration初始化Filter参数时，设置ignorePattern值，内容为正则表达式。
+> 修改了CasClientConfigurationProperties.java、CasClientConfiguration.java 文件，添加了ignorePattern属性，在CasClientConfiguration初始化Filter参数时，设置ignorePattern值，内容为正则表达式，新增了cas注销过滤器、侦听器。
 
 
 * Available optional properties
